@@ -34,9 +34,9 @@
       margin: 0 auto;
       padding: 1rem;
       text-align: center;
+      position: relative; /* エフェクト用要素の絶対配置に備える */
     }
 
-    /* ボタン共通 */
     button {
       cursor: pointer;
       border: none;
@@ -68,6 +68,10 @@
     .mode-button:hover {
       background: #ffe082;
     }
+    .active {
+      background: #81c784 !important; 
+      color: #fff;
+    }
 
     /* ======================================
        タイマー画面
@@ -92,11 +96,6 @@
     }
     .preset-button:hover, .custom-time-button:hover {
       background: #a5d6a7;
-    }
-    /* 選択中のボタンを強調 */
-    .active {
-      background: #81c784 !important; /* 選択中はもう少し濃い色に */
-      color: #fff;
     }
 
     .custom-input {
@@ -124,7 +123,7 @@
       background: #90caf9;
     }
 
-    /* 残り時間の表示 (mm:ss) */
+    /* 残り時間表示 (mm:ss) */
     #timeDisplay {
       margin-top: 1rem;
       font-size: 1.5rem;
@@ -144,6 +143,7 @@
     /* ======================================
        各パターンのスタイル
     ====================================== */
+
     /* ---------- 1. 円（針が通った部分を塗りつぶす） ---------- */
     .circle-timer-container {
       position: relative;
@@ -159,19 +159,8 @@
       stroke: #aaaaaa;
       stroke-width: 2;
     }
-    /* 塗りつぶし用パス */
     .circle-fill {
       fill: #4CAF50; 
-    }
-    /* 
-      円のCSSアニメーション用 (stroke-dashoffsetを変化させるアプローチも可)
-      ここでは <path> の長さを使ったアニメにしても良いが、
-      シンプルに <circle> を回転マスクする方法などもある。
-      デモではJSでパスを描いていたが、CSSキーはサンプルとして掲載。
-    */
-    @keyframes circleFillAnim {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
     }
 
     /* ---------- 2. バー ---------- */
@@ -182,87 +171,21 @@
       border: 2px solid #555;
       position: relative;
       margin: 0 auto;
-      background: #ffffff;
+      background: #ffebee; /* 薄いピンク */
       border-radius: 15px;
     }
-    /* バックカラーをもっとコントラスト強めに */
-    .bar-timer-container {
-      background: #ffebee; /* 薄いピンク系 */
-    }
-    /* 塗りつぶしの色をオレンジ系で目立たせる */
     .bar-fill {
       position: absolute;
       left: 0;
       top: 0;
       bottom: 0;
-      background: #ff7043; /* 濃いめのオレンジ */
+      background: #ff7043; /* オレンジ */
       width: 0%;
       border-radius: 15px 0 0 15px;
       transition: width 0.2s linear;
     }
 
-    /* ---------- 3. 砂時計 ---------- */
-    .sand-container {
-      width: 120px;
-      height: 200px;
-      position: relative;
-    }
-    .sand-glass-frame {
-      position: absolute;
-      top: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 120px;
-      height: 200px;
-      background: none;
-      border-left: 4px solid #555;
-      border-right: 4px solid #555;
-    }
-    .triangle-top, .triangle-bottom {
-      width: 0;
-      height: 0;
-      border-left: 58px solid transparent;
-      border-right: 58px solid transparent;
-      position: absolute;
-      left: 2px; /* 枠線内側 */
-    }
-    .triangle-top {
-      border-bottom: 60px solid #555;
-      top: 0;
-    }
-    .triangle-bottom {
-      border-top: 60px solid #555;
-      bottom: 0;
-    }
-    .sand-top, .sand-bottom {
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 110px;
-      background: #4CAF50;
-      overflow: hidden;
-    }
-    .sand-top {
-      top: 5px;
-      height: 0px; 
-      border-radius: 0 0 50% 50%;
-    }
-    .sand-bottom {
-      bottom: 5px;
-      height: 0px; 
-      border-radius: 50% 50% 0 0;
-    }
-    /* CSSアニメ用 - 例: 上が減っていき、下が増えていく */
-    @keyframes sandTopAnim {
-      0% { height: 100px; }
-      100% { height: 0px; }
-    }
-    @keyframes sandBottomAnim {
-      0% { height: 0px; }
-      100% { height: 100px; }
-    }
-
-    /* ---------- 4. 個数 ---------- */
+    /* ---------- 3. 個数 ---------- */
     .count-container {
       display: flex;
       flex-wrap: wrap;
@@ -277,11 +200,31 @@
       background: #4CAF50;
       border: 2px solid #4CAF50;
     }
-    /* 塗りつぶしを外す状態 */
-    .count-empty {
-      background: transparent;
+    /* 色が変化した状態(時間経過済) */
+    .count-used {
+      background: #eeeeee;
+      border: 2px solid #bbb;
     }
 
+    /* ======================================
+       終了時エフェクト（点滅用）
+    ====================================== */
+    .time-up-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(255, 0, 0, 0.6);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #fff;
+      font-size: 2rem;
+      animation: flash 1.5s ease-in-out infinite alternate;
+      z-index: 999; /* 最前面に */
+    }
+    @keyframes flash {
+      0%   { opacity: 1; }
+      100% { opacity: 0.2; }
+    }
   </style>
 </head>
 <body>
@@ -295,12 +238,12 @@
   <div id="modeSelection" class="mode-selection">
     <button class="mode-button" data-mode="circle">● サークル</button>
     <button class="mode-button" data-mode="bar">━ バー</button>
-    <button class="mode-button" data-mode="sand">⌛ 砂時計</button>
     <button class="mode-button" data-mode="count">●● 個数</button>
   </div>
 
   <!--◆◆◆ タイマー画面 ◆◆◆-->
   <div id="timerScreen" class="timer-screen">
+
     <!-- 時間設定ボタン -->
     <div class="timer-settings">
       <button class="preset-button" data-minutes="1">1分</button>
@@ -310,7 +253,7 @@
       <button id="customTimeBtn" class="custom-time-button">セット</button>
     </div>
 
-    <!-- スタート／ストップ／リセットボタン -->
+    <!-- 操作ボタン -->
     <div class="control-buttons">
       <button id="startBtn" class="control-button">スタート</button>
       <button id="stopBtn" class="control-button">ストップ</button>
@@ -337,18 +280,13 @@
         <div id="barFill" class="bar-fill"></div>
       </div>
 
-      <!-- (3) Sand Timer -->
-      <div id="sandTimer" class="sand-container hidden">
-        <div class="sand-glass-frame"></div>
-        <div class="triangle-top"></div>
-        <div class="triangle-bottom"></div>
-        <!-- 砂 上下 -->
-        <div id="sandTop" class="sand-top"></div>
-        <div id="sandBottom" class="sand-bottom"></div>
-      </div>
-
-      <!-- (4) Count Timer -->
+      <!-- (3) Count Timer -->
       <div id="countTimer" class="count-container hidden"></div>
+    </div>
+
+    <!-- 「とけいをえらぶ」ボタン（トップに戻る） -->
+    <div style="margin-top:1rem;">
+      <button id="returnBtn" class="control-button" style="background:#ffe0b2;">とけいをえらぶ</button>
     </div>
   </div>
 </div>
@@ -359,28 +297,26 @@
    ============================ */
 (function(){
   // DOM取得
-  const modeSelection = document.getElementById('modeSelection');
-  const timerScreen   = document.getElementById('timerScreen');
+  const modeSelection   = document.getElementById('modeSelection');
+  const timerScreen     = document.getElementById('timerScreen');
 
   // ボタン関連
-  const modeButtons       = document.querySelectorAll('.mode-button');
-  const presetButtons     = document.querySelectorAll('.preset-button');
-  const customInput       = document.getElementById('customInput');
-  const customTimeBtn     = document.getElementById('customTimeBtn');
-  const startBtn          = document.getElementById('startBtn');
-  const stopBtn           = document.getElementById('stopBtn');
-  const resetBtn          = document.getElementById('resetBtn');
+  const modeButtons     = document.querySelectorAll('.mode-button');
+  const presetButtons   = document.querySelectorAll('.preset-button');
+  const customInput     = document.getElementById('customInput');
+  const customTimeBtn   = document.getElementById('customTimeBtn');
+  const startBtn        = document.getElementById('startBtn');
+  const stopBtn         = document.getElementById('stopBtn');
+  const resetBtn        = document.getElementById('resetBtn');
+  const returnBtn       = document.getElementById('returnBtn');
 
   // タイマー表示
-  const timeDisplay       = document.getElementById('timeDisplay');
-  const circleTimer       = document.getElementById('circleTimer');
-  const circleFillPath    = document.getElementById('circleFillPath');
-  const barTimer          = document.getElementById('barTimer');
-  const barFill           = document.getElementById('barFill');
-  const sandTimer         = document.getElementById('sandTimer');
-  const sandTop           = document.getElementById('sandTop');
-  const sandBottom        = document.getElementById('sandBottom');
-  const countTimer        = document.getElementById('countTimer');
+  const timeDisplay     = document.getElementById('timeDisplay');
+  const circleTimer     = document.getElementById('circleTimer');
+  const circleFillPath  = document.getElementById('circleFillPath');
+  const barTimer        = document.getElementById('barTimer');
+  const barFill         = document.getElementById('barFill');
+  const countTimer      = document.getElementById('countTimer');
 
   // 選択されたモード
   let currentMode = null;
@@ -390,8 +326,11 @@
   let remainingTime = 0;
   let timerInterval = null;
 
-  // 「個数」パターン用の初期個数
-  const COUNT_MAX = 10;
+  // 個数パターン用
+  let countMax = 0;  // 1個あたり10秒 → totalTime / 10 個
+
+  // 終了時エフェクト用
+  let timeUpOverlay = null; // DOMを動的に作って制御
 
   /* -------------------------
      モード選択
@@ -403,7 +342,7 @@
       // クリックされたボタンにactiveを付与
       button.classList.add('active');
 
-      // 選択モード決定
+      // 選択モード
       currentMode = button.getAttribute('data-mode');
       // 画面切り替え
       modeSelection.style.display = 'none';
@@ -411,21 +350,30 @@
 
       // 全パターン隠す
       hideAllTimerDisplays();
-      // 選択パターン表示
       if(currentMode === 'circle'){
         circleTimer.classList.remove('hidden');
       } else if(currentMode === 'bar'){
         barTimer.classList.remove('hidden');
-      } else if(currentMode === 'sand'){
-        sandTimer.classList.remove('hidden');
       } else if(currentMode === 'count'){
         countTimer.classList.remove('hidden');
-        initCountItems(); // 個数パターンの丸を初期配置
       }
 
-      // 各種リセット
+      // リセット
       resetAllDisplays();
     });
+  });
+
+  /* -------------------------
+     戻るボタン（トップへ）
+  ------------------------- */
+  returnBtn.addEventListener('click', () => {
+    stopTimer();
+    resetAllDisplays();
+    // タイマー画面→モード選択画面
+    timerScreen.style.display = 'none';
+    modeSelection.style.display = 'flex';
+    // モードボタンのactive解除
+    modeButtons.forEach(b => b.classList.remove('active'));
   });
 
   /* -------------------------
@@ -437,7 +385,7 @@
       presetButtons.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
 
-      // カスタム入力ボタンも外す
+      // カスタム入力ボタンのactiveも外す
       customTimeBtn.classList.remove('active');
 
       const minutes = parseInt(btn.getAttribute('data-minutes'), 10);
@@ -451,7 +399,6 @@
   customTimeBtn.addEventListener('click', () => {
     // プリセットボタンからactiveを外す
     presetButtons.forEach(b => b.classList.remove('active'));
-    // カスタムボタンにactiveを付ける
     customTimeBtn.classList.add('active');
 
     const customVal = parseInt(customInput.value, 10);
@@ -471,27 +418,29 @@
      タイマー制御関数
   ------------------------- */
   function setTime(seconds) {
-    stopTimer(); // いったん止める
+    stopTimer();
     totalTime = seconds;
     remainingTime = seconds;
     updateDisplay(remainingTime, totalTime);
-    // CSSアニメーションが絡むパターンはリセット
-    resetAnimations();
+
+    // 個数パターン用の個数再計算 & 初期化
+    if(currentMode === 'count'){
+      countMax = Math.ceil(totalTime / 10); // 10秒毎に1個
+      initCountItems(countMax);
+    }
   }
 
   function startTimer() {
     if(totalTime <= 0) return; // 時間未設定なら何もしない
     if(timerInterval) return;  // 二重起動防止
 
-    // CSSアニメーションを最初から再生したい場合
-    //（中断→再開を細かくやるなら、途中計算が必要）
-    playAnimations();
-
     timerInterval = setInterval(() => {
       remainingTime--;
       if(remainingTime <= 0) {
         remainingTime = 0;
         stopTimer();
+        // タイムアップ演出
+        showTimeUpEffect();
       }
       updateDisplay(remainingTime, totalTime);
     }, 1000);
@@ -502,39 +451,43 @@
       clearInterval(timerInterval);
       timerInterval = null;
     }
-    pauseAnimations();
   }
 
   function resetTimer() {
     stopTimer();
     remainingTime = totalTime;
+    hideTimeUpEffect(); 
     updateDisplay(remainingTime, totalTime);
-    resetAnimations();
   }
 
-  /* -------------------------
-     表示更新（残り時間、各パターン）
-  ------------------------- */
+  /* ===============================
+     残り時間の表示更新
+  =============================== */
   function updateDisplay(remain, total) {
-    // mm:ss表示更新
+    // mm:ss形式で表示
     timeDisplay.textContent = '残り ' + formatTime(remain);
 
     switch(currentMode) {
-      case 'circle': updateCircle(remain, total); break;
-      case 'bar':    updateBar(remain, total);    break;
-      case 'sand':   updateSand(remain, total);   break;
-      case 'count':  updateCount(remain, total);  break;
+      case 'circle':
+        updateCircle(remain, total);
+        break;
+      case 'bar':
+        updateBar(remain, total);
+        break;
+      case 'count':
+        updateCount(remain, total);
+        break;
     }
   }
 
-  // mm:ss形式へのフォーマット
+  // mm:ss形式
   function formatTime(sec){
     let m = Math.floor(sec / 60);
     let s = sec % 60;
     return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
   }
 
-  /* (1) Circle Timer */
+  /* ---------- (1) Circle Timer ---------- */
   function updateCircle(remain, total) {
     let ratio = (total - remain) / total;
     if(ratio < 0) ratio = 0;
@@ -554,127 +507,92 @@
     circleFillPath.setAttribute('d', d);
   }
 
-  /* (2) Bar Timer */
+  /* ---------- (2) Bar Timer ---------- */
   function updateBar(remain, total) {
     let ratio = (total - remain) / total;
     if(ratio < 0) ratio = 0;
     if(ratio > 1) ratio = 1;
+
     const percent = (ratio * 100).toFixed(2) + '%';
     barFill.style.width = percent;
   }
 
-  /* (3) Sand Timer */
-  function updateSand(remain, total) {
-    // JSによる高さ操作はしない( CSSアニメに任せるときはコメントアウト )
-    // ここでは一応リアルタイム連動のままにしておく例
-    let ratio = (total - remain) / total;
-    if(ratio < 0) ratio = 0;
-    if(ratio > 1) ratio = 1;
-
-    const maxH = 100;
-    const topH = (1 - ratio) * maxH;
-    const botH = ratio * maxH;
-    sandTop.style.height = topH + 'px';
-    sandBottom.style.height = botH + 'px';
-  }
-
-  /* (4) Count Timer */
+  /* ---------- (3) Count Timer ---------- */
   function updateCount(remain, total) {
-    // 経過率
-    let ratio = (total - remain) / total;
-    if(ratio < 0) ratio = 0;
-    if(ratio > 1) ratio = 1;
+    // 経過秒
+    const usedSeconds = total - remain;
+    // 10秒経過するごとに左から順に色を変える
+    // 例: usedBlocks = floor(usedSeconds / 10)
+    let usedBlocks = Math.floor(usedSeconds / 10);
+    if(usedBlocks < 0) usedBlocks = 0;
+    if(usedBlocks > countMax) usedBlocks = countMax;
 
-    const usedCount = Math.floor(ratio * COUNT_MAX); 
-    // usedCount ぶんが「枠だけ」、残りが塗りつぶし
-    for(let i = 0; i < COUNT_MAX; i++){
+    // countTimer.children[i] (0 <= i < countMax)
+    //  0番目〜(usedBlocks-1)番目 → count-usedクラス付与
+    for(let i=0; i<countMax; i++){
       const item = countTimer.children[i];
-      if(i < usedCount){
-        // 枠だけ
-        item.classList.add('count-empty');
-        item.style.border = '2px solid #4CAF50';
+      if(i < usedBlocks){
+        item.classList.add('count-used');
       } else {
-        // 塗りつぶし
-        item.classList.remove('count-empty');
-        item.style.background = '#4CAF50';
-        item.style.border = '2px solid #4CAF50';
+        item.classList.remove('count-used');
       }
     }
   }
 
-  /* 個数パターン用の丸を初期化（固定10個） */
-  function initCountItems(){
+  /* 個数パターンの丸を初期化 */
+  function initCountItems(num){
     countTimer.innerHTML = '';
-    for(let i=0; i<COUNT_MAX; i++){
+    for(let i=0; i<num; i++){
       const div = document.createElement('div');
       div.className = 'count-item';
       countTimer.appendChild(div);
     }
   }
 
-  /* -------------------------
+  /* ===============================
      表示リセット
-  ------------------------- */
+  =============================== */
   function hideAllTimerDisplays(){
     circleTimer.classList.add('hidden');
     barTimer.classList.add('hidden');
-    sandTimer.classList.add('hidden');
     countTimer.classList.add('hidden');
   }
   function resetAllDisplays(){
     totalTime = 0;
     remainingTime = 0;
     stopTimer();
+    // 各表示を初期化
     circleFillPath.setAttribute('d','');
     barFill.style.width = '0%';
-    sandTop.style.height = '0px';
-    sandBottom.style.height = '0px';
-    if(currentMode === 'count'){
-      initCountItems();
-    }
+    countTimer.innerHTML = '';
     timeDisplay.textContent = '残り 00:00';
+
     customInput.value = '';
     presetButtons.forEach(b => b.classList.remove('active'));
     customTimeBtn.classList.remove('active');
+
+    hideTimeUpEffect();
   }
 
-  /* -------------------------
-     CSSアニメーション制御 (簡易版)
-     （厳密に途中停止→再開をするなら
-       アニメーションの計算が必要）
-  ------------------------- */
-  function resetAnimations(){
-    // 砂時計と円について簡易的に初期化
-    // 例: アニメーションを強制再読み込みするならクラスを付け替えなど
-    sandTop.style.animation = 'none';
-    sandBottom.style.animation = 'none';
+  /* ===============================
+     終了時のエフェクト
+  =============================== */
+  function showTimeUpEffect() {
+    // 既に作られていたら削除して再生成
+    hideTimeUpEffect();
+
+    timeUpOverlay = document.createElement('div');
+    timeUpOverlay.className = 'time-up-overlay';
+    timeUpOverlay.textContent = 'おしまい！';
+    timerScreen.appendChild(timeUpOverlay);
+  }
+  function hideTimeUpEffect() {
+    if(timeUpOverlay && timerScreen.contains(timeUpOverlay)){
+      timerScreen.removeChild(timeUpOverlay);
+    }
+    timeUpOverlay = null;
   }
 
-  function playAnimations(){
-    if(currentMode === 'sand'){
-      // 例: 総時間 totalTime に応じてkeyframe再生
-      // 今は簡単に top: 100px→0, bottom: 0→100px
-      // 途中停止再開は考慮していない
-      sandTop.style.animation = `sandTopAnim ${totalTime}s linear forwards`;
-      sandBottom.style.animation = `sandBottomAnim ${totalTime}s linear forwards`;
-    }
-    if(currentMode === 'circle'){
-      // 本来はstroke-dashoffset操作などをCSSアニメにしてもOK
-      // デモではJSでパスを描画しているため、ここでは割愛
-      // 例だけ書くと:
-      // circleFillPath.style.animation = `circleAnim ${totalTime}s linear forwards`;
-    }
-  }
-
-  function pauseAnimations(){
-    if(currentMode === 'sand'){
-      sandTop.style.animationPlayState = 'paused';
-      sandBottom.style.animationPlayState = 'paused';
-    }
-    if(currentMode === 'circle'){
-      // circleFillPath.style.animationPlayState = 'paused';
-    }
-  }
 })();
 </script>
 </body>
