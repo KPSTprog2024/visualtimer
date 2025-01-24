@@ -1,504 +1,681 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>みえるタイマー</title>
   <style>
-    /* ===== リセット＆ベース ===== */
+    /* ======================================
+       ベーススタイル
+    ====================================== */
     * {
       box-sizing: border-box;
-      margin: 0;
+      margin: 0; 
       padding: 0;
       font-family: sans-serif;
     }
     body {
-      background: #fff8e1;
+      background: #fffbea; /* やさしい色味 */
       color: #333;
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      align-items: center;
-      padding: 1rem;
     }
-
-    h1, h2, h3 {
-      margin-bottom: 0.5rem;
+    header {
+      text-align: center;
+      padding: 1rem;
+      background: #ffc107; /* ポップなカラー */
+      color: #4a4a4a;
     }
     h1 {
+      margin: 0;
       font-size: 2rem;
-      color: #ff6f00;
+    }
+    .container {
+      width: 90%;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 1rem;
       text-align: center;
-      margin-bottom: 1rem;
     }
 
-    /* ===== ボタン共通スタイル ===== */
+    /* ボタン共通 */
     button {
-      background-color: #ffd54f;
-      color: #333;
-      border: 2px solid #ffecb3;
-      border-radius: 8px;
-      font-size: 1rem;
-      padding: 0.5rem 1rem;
-      margin: 0.5rem;
       cursor: pointer;
-      transition: 0.3s;
+      border: none;
+      outline: none;
     }
-    button:hover {
-      background-color: #fff59d;
-    }
-
-    /* ===== 画面切り替えのための表示/非表示 ===== */
     .hidden {
       display: none;
     }
 
-    /* ===== トップ画面 ===== */
-    #home {
-      text-align: center;
-    }
-    #pattern-buttons {
+    /* ======================================
+       トップページ：モード選択
+    ====================================== */
+    .mode-selection {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
       gap: 1rem;
-      margin-top: 1rem;
     }
-    .pattern-btn {
-      width: 120px;
-      height: 120px;
+    .mode-button {
+      flex: 1 1 40%;
+      max-width: 200px;
+      padding: 1rem;
+      font-size: 1.2rem;
+      background: #fff3cd;
+      border: 2px solid #ffecb5;
+      border-radius: 8px;
+      transition: background 0.3s;
+    }
+    .mode-button:hover {
+      background: #ffe082;
+    }
+
+    /* ======================================
+       タイマー画面
+    ====================================== */
+    .timer-screen {
+      display: none;
+    }
+    .timer-settings {
+      margin-top: 1rem;
       display: flex;
-      flex-direction: column;
-      align-items: center;
+      flex-wrap: wrap;
       justify-content: center;
-      border-radius: 10px;
+      gap: 0.5rem;
+    }
+    .preset-button, .custom-time-button {
+      background: #c8e6c9;
+      border: 2px solid #a5d6a7;
+      border-radius: 8px;
+      padding: 0.7rem 1rem;
       font-size: 1rem;
-      background-color: #ffe082;
-      border: 3px solid #fff8e1;
-      box-shadow: 2px 2px 6px rgba(0,0,0,0.1);
+      transition: background 0.3s;
+    }
+    .preset-button:hover, .custom-time-button:hover {
+      background: #a5d6a7;
+    }
+    /* 選択中のボタンを強調 */
+    .active {
+      background: #81c784 !important; /* 選択中はもう少し濃い色に */
+      color: #fff;
     }
 
-    /* ===== タイマー画面 ===== */
-    #timer-screen {
+    .custom-input {
+      width: 60px;
       text-align: center;
-    }
-    #time-options {
-      margin: 1rem 0;
-    }
-    .time-btn {
-      min-width: 60px;
-    }
-    #custom-time {
-      width: 50px;
-      text-align: center;
-      margin-left: 0.5rem;
-    }
-    #timer-controls {
-      margin-top: 1rem;
+      font-size: 1rem;
+      padding: 0.4rem;
     }
 
-    /* ===== 表示領域 ===== */
-    #timer-display {
+    .control-buttons {
       margin-top: 1rem;
-      width: 300px;
-      height: 300px;
-      background: #fff3e0;
-      border-radius: 15px;
-      margin-bottom: 1rem;
-      position: relative;
-      overflow: hidden;
       display: flex;
-      align-items: center;
       justify-content: center;
+      gap: 1rem;
+    }
+    .control-button {
+      background: #bbdefb;
+      border: 2px solid #90caf9;
+      border-radius: 8px;
+      padding: 0.8rem 1.2rem;
+      font-size: 1rem;
+      transition: background 0.3s;
+    }
+    .control-button:hover {
+      background: #90caf9;
     }
 
-    /* --- 円（時計）のスタイル例 --- */
-    .circle-container {
+    /* 残り時間の表示 (mm:ss) */
+    #timeDisplay {
+      margin-top: 1rem;
+      font-size: 1.5rem;
+      color: #444;
+    }
+
+    /* タイマー表示エリア */
+    .display-area {
+      margin-top: 1rem;
+      height: 300px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
       position: relative;
-      width: 200px;
-      height: 200px;
+    }
+
+    /* ======================================
+       各パターンのスタイル
+    ====================================== */
+    /* ---------- 1. 円（針が通った部分を塗りつぶす） ---------- */
+    .circle-timer-container {
+      position: relative;
+      width: 220px;
+      height: 220px;
+    }
+    .circle-timer-container svg {
+      width: 100%;
+      height: 100%;
     }
     .circle-bg {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 200px;
-      height: 200px;
-      border-radius: 50%;
-      border: 10px solid #ffc107;
+      fill: #ffffff;
+      stroke: #aaaaaa;
+      stroke-width: 2;
     }
+    /* 塗りつぶし用パス */
     .circle-fill {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 200px;
-      height: 200px;
-      border-radius: 50%;
-      clip: rect(0px, 200px, 200px, 100px);
-      /* clipを使って半円単位で塗りつぶしをコントロール */
+      fill: #4CAF50; 
     }
-    .circle-fill::before {
-      content: "";
-      position: absolute;
-      border: 10px solid #ffca28;
-      width: 200px;
-      height: 200px;
-      border-radius: 50%;
-      clip: rect(0px, 100px, 200px, 0px);
-      transform: rotate(0deg);
-      transform-origin: center center;
+    /* 
+      円のCSSアニメーション用 (stroke-dashoffsetを変化させるアプローチも可)
+      ここでは <path> の長さを使ったアニメにしても良いが、
+      シンプルに <circle> を回転マスクする方法などもある。
+      デモではJSでパスを描いていたが、CSSキーはサンプルとして掲載。
+    */
+    @keyframes circleFillAnim {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
 
-    /* --- バーのスタイル例 --- */
-    .bar-container {
+    /* ---------- 2. バー ---------- */
+    .bar-timer-container {
       width: 80%;
+      max-width: 300px;
       height: 30px;
-      background-color: #ffc107;
-      border-radius: 15px;
-      overflow: hidden;
+      border: 2px solid #555;
       position: relative;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 15px;
     }
+    /* バックカラーをもっとコントラスト強めに */
+    .bar-timer-container {
+      background: #ffebee; /* 薄いピンク系 */
+    }
+    /* 塗りつぶしの色をオレンジ系で目立たせる */
     .bar-fill {
       position: absolute;
-      top: 0;
       left: 0;
-      height: 30px;
-      background-color: #ffca28;
-      width: 100%;
+      top: 0;
+      bottom: 0;
+      background: #ff7043; /* 濃いめのオレンジ */
+      width: 0%;
+      border-radius: 15px 0 0 15px;
       transition: width 0.2s linear;
     }
 
-    /* --- 砂時計のスタイル例 --- */
-    .hourglass {
-      width: 100px;
-      height: 150px;
-      background: linear-gradient(to bottom, #ffca28 50%, transparent 50%);
+    /* ---------- 3. 砂時計 ---------- */
+    .sand-container {
+      width: 120px;
+      height: 200px;
       position: relative;
     }
-    .hourglass::before,
-    .hourglass::after {
-      content: "";
+    .sand-glass-frame {
       position: absolute;
-      left: 0;
-      width: 100px;
-      height: 50%;
-      border: 3px solid #ffb300;
-      border-top-left-radius: 50px;
-      border-top-right-radius: 50px;
-      border-bottom-left-radius: 50px;
-      border-bottom-right-radius: 50px;
-    }
-    .hourglass::before {
       top: 0;
-      border-bottom: none;
-      transform: rotate(180deg);
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120px;
+      height: 200px;
+      background: none;
+      border-left: 4px solid #555;
+      border-right: 4px solid #555;
     }
-    .hourglass::after {
+    .triangle-top, .triangle-bottom {
+      width: 0;
+      height: 0;
+      border-left: 58px solid transparent;
+      border-right: 58px solid transparent;
+      position: absolute;
+      left: 2px; /* 枠線内側 */
+    }
+    .triangle-top {
+      border-bottom: 60px solid #555;
+      top: 0;
+    }
+    .triangle-bottom {
+      border-top: 60px solid #555;
       bottom: 0;
-      border-top: none;
+    }
+    .sand-top, .sand-bottom {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 110px;
+      background: #4CAF50;
+      overflow: hidden;
+    }
+    .sand-top {
+      top: 5px;
+      height: 0px; 
+      border-radius: 0 0 50% 50%;
+    }
+    .sand-bottom {
+      bottom: 5px;
+      height: 0px; 
+      border-radius: 50% 50% 0 0;
+    }
+    /* CSSアニメ用 - 例: 上が減っていき、下が増えていく */
+    @keyframes sandTopAnim {
+      0% { height: 100px; }
+      100% { height: 0px; }
+    }
+    @keyframes sandBottomAnim {
+      0% { height: 0px; }
+      100% { height: 100px; }
     }
 
-    /* --- 個数のスタイル例 --- */
-    .dots-container {
+    /* ---------- 4. 個数 ---------- */
+    .count-container {
       display: flex;
-      gap: 0.5rem;
       flex-wrap: wrap;
+      gap: 0.5rem;
       justify-content: center;
-      align-items: center;
-      max-width: 250px;
+      max-width: 300px;
     }
-    .dot {
-      width: 40px;
-      height: 40px;
-      background-color: #ffc107;
+    .count-item {
+      width: 30px;
+      height: 30px;
       border-radius: 50%;
+      background: #4CAF50;
+      border: 2px solid #4CAF50;
     }
+    /* 塗りつぶしを外す状態 */
+    .count-empty {
+      background: transparent;
+    }
+
   </style>
 </head>
 <body>
+<header>
+  <h1>みえるタイマー</h1>
+</header>
 
-  <!-- ========== トップページ ========== -->
-  <div id="home">
-    <h1>みえるタイマー</h1>
-    <h2>パターンをえらんでね！</h2>
-    <div id="pattern-buttons">
-      <button class="pattern-btn" data-pattern="circle">
-        まる<br>(時計)
-      </button>
-      <button class="pattern-btn" data-pattern="bar">
-        バー
-      </button>
-      <button class="pattern-btn" data-pattern="hourglass">
-        すな<br>どけい
-      </button>
-      <button class="pattern-btn" data-pattern="dots">
-        こすう<br>(しるし)
-      </button>
-    </div>
+<div class="container">
+
+  <!--◆◆◆ モード選択画面 ◆◆◆-->
+  <div id="modeSelection" class="mode-selection">
+    <button class="mode-button" data-mode="circle">● サークル</button>
+    <button class="mode-button" data-mode="bar">━ バー</button>
+    <button class="mode-button" data-mode="sand">⌛ 砂時計</button>
+    <button class="mode-button" data-mode="count">●● 個数</button>
   </div>
 
-  <!-- ========== タイマー画面 ========== -->
-  <div id="timer-screen" class="hidden">
-    <h2 id="pattern-name"></h2>
-    <!-- タイマー表示領域 -->
-    <div id="timer-display"></div>
-
-    <!-- 時間設定 -->
-    <div id="time-options">
-      <button class="time-btn" data-time="1">1分</button>
-      <button class="time-btn" data-time="3">3分</button>
-      <button class="time-btn" data-time="5">5分</button>
-      <br />
-      <label>自由設定:
-        <input id="custom-time" type="number" min="1" max="60" placeholder="分" />
-      </label>
+  <!--◆◆◆ タイマー画面 ◆◆◆-->
+  <div id="timerScreen" class="timer-screen">
+    <!-- 時間設定ボタン -->
+    <div class="timer-settings">
+      <button class="preset-button" data-minutes="1">1分</button>
+      <button class="preset-button" data-minutes="3">3分</button>
+      <button class="preset-button" data-minutes="5">5分</button>
+      <input id="customInput" class="custom-input" type="number" min="1" max="999" placeholder="分">
+      <button id="customTimeBtn" class="custom-time-button">セット</button>
     </div>
 
-    <!-- スタート/ストップ/リセット -->
-    <div id="timer-controls">
-      <button id="start-btn">スタート</button>
-      <button id="stop-btn">ストップ</button>
-      <button id="reset-btn">リセット</button>
+    <!-- スタート／ストップ／リセットボタン -->
+    <div class="control-buttons">
+      <button id="startBtn" class="control-button">スタート</button>
+      <button id="stopBtn" class="control-button">ストップ</button>
+      <button id="resetBtn" class="control-button">リセット</button>
     </div>
 
-    <!-- 戻るボタン -->
-    <div>
-      <button id="back-btn">もどる</button>
+    <!-- 残り時間表示 -->
+    <div id="timeDisplay">残り 00:00</div>
+
+    <!-- タイマー表示エリア -->
+    <div id="displayArea" class="display-area">
+      <!-- (1) Circle Timer -->
+      <div id="circleTimer" class="circle-timer-container hidden">
+        <svg viewBox="0 0 100 100">
+          <!-- 背景円 -->
+          <circle class="circle-bg" cx="50" cy="50" r="45"></circle>
+          <!-- 塗りつぶし用パス -->
+          <path id="circleFillPath" class="circle-fill" d="" />
+        </svg>
+      </div>
+
+      <!-- (2) Bar Timer -->
+      <div id="barTimer" class="bar-timer-container hidden">
+        <div id="barFill" class="bar-fill"></div>
+      </div>
+
+      <!-- (3) Sand Timer -->
+      <div id="sandTimer" class="sand-container hidden">
+        <div class="sand-glass-frame"></div>
+        <div class="triangle-top"></div>
+        <div class="triangle-bottom"></div>
+        <!-- 砂 上下 -->
+        <div id="sandTop" class="sand-top"></div>
+        <div id="sandBottom" class="sand-bottom"></div>
+      </div>
+
+      <!-- (4) Count Timer -->
+      <div id="countTimer" class="count-container hidden"></div>
     </div>
   </div>
+</div>
 
-  <script>
-    /************************************************************
-     * グローバル変数＆初期設定
-     ************************************************************/
-    let currentPattern = "";       // 選択中のパターン ("circle", "bar", "hourglass", "dots")
-    let totalTime = 60;            // デフォルト(秒) 1分
-    let remainingTime = 60;        // 残り時間(秒)
-    let timerInterval = null;      // setInterval管理用
+<script>
+/* ============================
+   タイマー全体の制御ロジック
+   ============================ */
+(function(){
+  // DOM取得
+  const modeSelection = document.getElementById('modeSelection');
+  const timerScreen   = document.getElementById('timerScreen');
 
-    const home = document.getElementById("home");
-    const timerScreen = document.getElementById("timer-screen");
-    const patternName = document.getElementById("pattern-name");
-    const timerDisplay = document.getElementById("timer-display");
+  // ボタン関連
+  const modeButtons       = document.querySelectorAll('.mode-button');
+  const presetButtons     = document.querySelectorAll('.preset-button');
+  const customInput       = document.getElementById('customInput');
+  const customTimeBtn     = document.getElementById('customTimeBtn');
+  const startBtn          = document.getElementById('startBtn');
+  const stopBtn           = document.getElementById('stopBtn');
+  const resetBtn          = document.getElementById('resetBtn');
 
-    // ボタンたち
-    const patternButtons = document.querySelectorAll("#pattern-buttons .pattern-btn");
-    const timeButtons = document.querySelectorAll("#time-options .time-btn");
-    const customTimeInput = document.getElementById("custom-time");
-    const startBtn = document.getElementById("start-btn");
-    const stopBtn = document.getElementById("stop-btn");
-    const resetBtn = document.getElementById("reset-btn");
-    const backBtn = document.getElementById("back-btn");
+  // タイマー表示
+  const timeDisplay       = document.getElementById('timeDisplay');
+  const circleTimer       = document.getElementById('circleTimer');
+  const circleFillPath    = document.getElementById('circleFillPath');
+  const barTimer          = document.getElementById('barTimer');
+  const barFill           = document.getElementById('barFill');
+  const sandTimer         = document.getElementById('sandTimer');
+  const sandTop           = document.getElementById('sandTop');
+  const sandBottom        = document.getElementById('sandBottom');
+  const countTimer        = document.getElementById('countTimer');
 
-    /************************************************************
-     * イベント登録
-     ************************************************************/
-    // パターン選択ボタン
-    patternButtons.forEach(btn => {
-      btn.addEventListener("click", () => {
-        currentPattern = btn.dataset.pattern;
-        showTimerScreen();
-      });
+  // 選択されたモード
+  let currentMode = null;
+
+  // タイマー管理
+  let totalTime = 0;    // 合計秒数
+  let remainingTime = 0;
+  let timerInterval = null;
+
+  // 「個数」パターン用の初期個数
+  const COUNT_MAX = 10;
+
+  /* -------------------------
+     モード選択
+  ------------------------- */
+  modeButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      // すべてのモードボタンからactiveを外す
+      modeButtons.forEach(b => b.classList.remove('active'));
+      // クリックされたボタンにactiveを付与
+      button.classList.add('active');
+
+      // 選択モード決定
+      currentMode = button.getAttribute('data-mode');
+      // 画面切り替え
+      modeSelection.style.display = 'none';
+      timerScreen.style.display = 'block';
+
+      // 全パターン隠す
+      hideAllTimerDisplays();
+      // 選択パターン表示
+      if(currentMode === 'circle'){
+        circleTimer.classList.remove('hidden');
+      } else if(currentMode === 'bar'){
+        barTimer.classList.remove('hidden');
+      } else if(currentMode === 'sand'){
+        sandTimer.classList.remove('hidden');
+      } else if(currentMode === 'count'){
+        countTimer.classList.remove('hidden');
+        initCountItems(); // 個数パターンの丸を初期配置
+      }
+
+      // 各種リセット
+      resetAllDisplays();
     });
+  });
 
-    // 時間プリセットボタン
-    timeButtons.forEach(btn => {
-      btn.addEventListener("click", () => {
-        const minutes = parseInt(btn.dataset.time, 10);
-        setTime(minutes);
-      });
+  /* -------------------------
+     プリセット時間選択
+  ------------------------- */
+  presetButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      // プリセットボタンの選択状態をクリアし、今回押したボタンだけactive
+      presetButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      // カスタム入力ボタンも外す
+      customTimeBtn.classList.remove('active');
+
+      const minutes = parseInt(btn.getAttribute('data-minutes'), 10);
+      setTime(minutes * 60);
     });
+  });
 
-    // 自由入力
-    customTimeInput.addEventListener("change", () => {
-      const minutes = parseInt(customTimeInput.value, 10);
-      if (!isNaN(minutes) && minutes > 0) {
-        setTime(minutes);
+  /* -------------------------
+     カスタム時間セット
+  ------------------------- */
+  customTimeBtn.addEventListener('click', () => {
+    // プリセットボタンからactiveを外す
+    presetButtons.forEach(b => b.classList.remove('active'));
+    // カスタムボタンにactiveを付ける
+    customTimeBtn.classList.add('active');
+
+    const customVal = parseInt(customInput.value, 10);
+    if(!isNaN(customVal) && customVal > 0) {
+      setTime(customVal * 60);
+    }
+  });
+
+  /* -------------------------
+     スタート・ストップ・リセット
+  ------------------------- */
+  startBtn.addEventListener('click', startTimer);
+  stopBtn.addEventListener('click', stopTimer);
+  resetBtn.addEventListener('click', resetTimer);
+
+  /* -------------------------
+     タイマー制御関数
+  ------------------------- */
+  function setTime(seconds) {
+    stopTimer(); // いったん止める
+    totalTime = seconds;
+    remainingTime = seconds;
+    updateDisplay(remainingTime, totalTime);
+    // CSSアニメーションが絡むパターンはリセット
+    resetAnimations();
+  }
+
+  function startTimer() {
+    if(totalTime <= 0) return; // 時間未設定なら何もしない
+    if(timerInterval) return;  // 二重起動防止
+
+    // CSSアニメーションを最初から再生したい場合
+    //（中断→再開を細かくやるなら、途中計算が必要）
+    playAnimations();
+
+    timerInterval = setInterval(() => {
+      remainingTime--;
+      if(remainingTime <= 0) {
+        remainingTime = 0;
+        stopTimer();
       }
-    });
+      updateDisplay(remainingTime, totalTime);
+    }, 1000);
+  }
 
-    // スタート/ストップ/リセット
-    startBtn.addEventListener("click", startTimer);
-    stopBtn.addEventListener("click", stopTimer);
-    resetBtn.addEventListener("click", resetTimer);
-
-    // 戻るボタン
-    backBtn.addEventListener("click", () => {
-      stopTimer();
-      home.classList.remove("hidden");
-      timerScreen.classList.add("hidden");
-      timerDisplay.innerHTML = "";
-    });
-
-    /************************************************************
-     * 画面遷移
-     ************************************************************/
-    function showTimerScreen() {
-      home.classList.add("hidden");
-      timerScreen.classList.remove("hidden");
-
-      // パターン名表示
-      let nameJP = "";
-      switch(currentPattern) {
-        case "circle":    nameJP = "まる（時計）"; break;
-        case "bar":       nameJP = "バー";        break;
-        case "hourglass": nameJP = "すなどけい";  break;
-        case "dots":      nameJP = "こすう";      break;
-        default:          nameJP = "？？？";      break;
-      }
-      patternName.textContent = nameJP;
-
-      // デフォルト1分にリセット
-      setTime(1);
-      resetTimer();
+  function stopTimer() {
+    if(timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
     }
+    pauseAnimations();
+  }
 
-    /************************************************************
-     * タイマー設定＆描画
-     ************************************************************/
-    // 時間設定（分 → 秒）
-    function setTime(minutes) {
-      totalTime = minutes * 60;
-      remainingTime = totalTime;
-      updateDisplay(0); // 0%消化で描画
+  function resetTimer() {
+    stopTimer();
+    remainingTime = totalTime;
+    updateDisplay(remainingTime, totalTime);
+    resetAnimations();
+  }
+
+  /* -------------------------
+     表示更新（残り時間、各パターン）
+  ------------------------- */
+  function updateDisplay(remain, total) {
+    // mm:ss表示更新
+    timeDisplay.textContent = '残り ' + formatTime(remain);
+
+    switch(currentMode) {
+      case 'circle': updateCircle(remain, total); break;
+      case 'bar':    updateBar(remain, total);    break;
+      case 'sand':   updateSand(remain, total);   break;
+      case 'count':  updateCount(remain, total);  break;
     }
+  }
 
-    // 表示更新
-    // progressRatio: 0(スタート時) ～ 1(終了時)
-    function updateDisplay(progressRatio) {
-      // タイマー領域を一旦クリア
-      timerDisplay.innerHTML = "";
+  // mm:ss形式へのフォーマット
+  function formatTime(sec){
+    let m = Math.floor(sec / 60);
+    let s = sec % 60;
+    return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  }
 
-      switch(currentPattern) {
-        case "circle":
-          drawCircle(progressRatio);
-          break;
-        case "bar":
-          drawBar(progressRatio);
-          break;
-        case "hourglass":
-          drawHourglass(progressRatio);
-          break;
-        case "dots":
-          drawDots(progressRatio);
-          break;
-      }
+  /* (1) Circle Timer */
+  function updateCircle(remain, total) {
+    let ratio = (total - remain) / total;
+    if(ratio < 0) ratio = 0;
+    if(ratio > 1) ratio = 1;
+
+    const angle = 360 * ratio;
+    const largeArc = angle > 180 ? 1 : 0;
+    const endX = 50 + 45 * Math.sin(Math.PI * (angle/180));
+    const endY = 50 - 45 * Math.cos(Math.PI * (angle/180));
+
+    let d = '';
+    if(angle > 0){
+      d = `M 50,5 
+           A 45,45 0 ${largeArc} 1 ${endX},${endY} 
+           L 50,50 Z`;
     }
+    circleFillPath.setAttribute('d', d);
+  }
 
-    // --- 1) 円（時計）パターン ---
-    function drawCircle(progressRatio) {
-      const container = document.createElement("div");
-      container.className = "circle-container";
+  /* (2) Bar Timer */
+  function updateBar(remain, total) {
+    let ratio = (total - remain) / total;
+    if(ratio < 0) ratio = 0;
+    if(ratio > 1) ratio = 1;
+    const percent = (ratio * 100).toFixed(2) + '%';
+    barFill.style.width = percent;
+  }
 
-      // 円の下地
-      const bg = document.createElement("div");
-      bg.className = "circle-bg";
+  /* (3) Sand Timer */
+  function updateSand(remain, total) {
+    // JSによる高さ操作はしない( CSSアニメに任せるときはコメントアウト )
+    // ここでは一応リアルタイム連動のままにしておく例
+    let ratio = (total - remain) / total;
+    if(ratio < 0) ratio = 0;
+    if(ratio > 1) ratio = 1;
 
-      // 円の塗りつぶし
-      const fill = document.createElement("div");
-      fill.className = "circle-fill";
+    const maxH = 100;
+    const topH = (1 - ratio) * maxH;
+    const botH = ratio * maxH;
+    sandTop.style.height = topH + 'px';
+    sandBottom.style.height = botH + 'px';
+  }
 
-      // 塗りつぶし角度 (時計回り)
-      const angle = 360 * progressRatio;
-      fill.style.transform = `rotate(${angle}deg)`;
+  /* (4) Count Timer */
+  function updateCount(remain, total) {
+    // 経過率
+    let ratio = (total - remain) / total;
+    if(ratio < 0) ratio = 0;
+    if(ratio > 1) ratio = 1;
 
-      // fill::before への角度指定
-      fill.style.setProperty("--progress-angle", angle);
-
-      container.appendChild(bg);
-      container.appendChild(fill);
-      timerDisplay.appendChild(container);
-    }
-
-    // --- 2) バーのパターン ---
-    function drawBar(progressRatio) {
-      const barContainer = document.createElement("div");
-      barContainer.className = "bar-container";
-
-      const barFill = document.createElement("div");
-      barFill.className = "bar-fill";
-
-      // 幅の変化
-      const fillWidth = (1 - progressRatio) * 100; // 残り時間割合
-      barFill.style.width = fillWidth + "%";
-
-      barContainer.appendChild(barFill);
-      timerDisplay.appendChild(barContainer);
-    }
-
-    // --- 3) 砂時計パターン ---
-    function drawHourglass(progressRatio) {
-      // 砂が落ちた割合を表すための比率(0 → 1)
-      // progressRatio は経過率 → 砂時計は"上が少なくなり、下が増える"
-      // ここでは簡易的に上: (1 - progressRatio) 下: progressRatio で表示
-      const hourglass = document.createElement("div");
-      hourglass.className = "hourglass";
-
-      // 背景のgradを制御: 0%で上半分全部砂、1%で下半分全部砂
-      // ここでは linear-gradient を動的に更新
-      const topPercent = 50 * (1 - progressRatio);     // 上の砂部分
-      const bottomPercent = 50 * progressRatio;        // 下の砂部分
-      hourglass.style.background = `linear-gradient(to bottom, 
-        #ffca28 ${topPercent}%, 
-        transparent ${topPercent}%,
-        transparent ${50}%, 
-        #ffca28 ${50}%, 
-        #ffca28 ${50 + bottomPercent}%, 
-        transparent ${50 + bottomPercent}%
-      )`;
-
-      timerDisplay.appendChild(hourglass);
-    }
-
-    // --- 4) 個数のパターン ---
-    function drawDots(progressRatio) {
-      const container = document.createElement("div");
-      container.className = "dots-container";
-
-      // 仮に最大10個とする
-      const maxDots = 10;
-      // 残存数
-      const remainingDots = Math.ceil((1 - progressRatio) * maxDots);
-
-      for (let i = 0; i < remainingDots; i++) {
-        const dot = document.createElement("div");
-        dot.className = "dot";
-        container.appendChild(dot);
-      }
-      timerDisplay.appendChild(container);
-    }
-
-    /************************************************************
-     * タイマー制御
-     ************************************************************/
-    function startTimer() {
-      if (timerInterval) return; // 二重起動防止
-
-      timerInterval = setInterval(() => {
-        remainingTime--;
-        if (remainingTime < 0) {
-          stopTimer();
-          remainingTime = 0;
-          alert("おしまい！");
-          return;
-        }
-        const progress = 1 - (remainingTime / totalTime);
-        updateDisplay(progress);
-      }, 1000);
-    }
-
-    function stopTimer() {
-      if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
+    const usedCount = Math.floor(ratio * COUNT_MAX); 
+    // usedCount ぶんが「枠だけ」、残りが塗りつぶし
+    for(let i = 0; i < COUNT_MAX; i++){
+      const item = countTimer.children[i];
+      if(i < usedCount){
+        // 枠だけ
+        item.classList.add('count-empty');
+        item.style.border = '2px solid #4CAF50';
+      } else {
+        // 塗りつぶし
+        item.classList.remove('count-empty');
+        item.style.background = '#4CAF50';
+        item.style.border = '2px solid #4CAF50';
       }
     }
+  }
 
-    function resetTimer() {
-      stopTimer();
-      remainingTime = totalTime;
-      updateDisplay(0);
+  /* 個数パターン用の丸を初期化（固定10個） */
+  function initCountItems(){
+    countTimer.innerHTML = '';
+    for(let i=0; i<COUNT_MAX; i++){
+      const div = document.createElement('div');
+      div.className = 'count-item';
+      countTimer.appendChild(div);
     }
-  </script>
+  }
+
+  /* -------------------------
+     表示リセット
+  ------------------------- */
+  function hideAllTimerDisplays(){
+    circleTimer.classList.add('hidden');
+    barTimer.classList.add('hidden');
+    sandTimer.classList.add('hidden');
+    countTimer.classList.add('hidden');
+  }
+  function resetAllDisplays(){
+    totalTime = 0;
+    remainingTime = 0;
+    stopTimer();
+    circleFillPath.setAttribute('d','');
+    barFill.style.width = '0%';
+    sandTop.style.height = '0px';
+    sandBottom.style.height = '0px';
+    if(currentMode === 'count'){
+      initCountItems();
+    }
+    timeDisplay.textContent = '残り 00:00';
+    customInput.value = '';
+    presetButtons.forEach(b => b.classList.remove('active'));
+    customTimeBtn.classList.remove('active');
+  }
+
+  /* -------------------------
+     CSSアニメーション制御 (簡易版)
+     （厳密に途中停止→再開をするなら
+       アニメーションの計算が必要）
+  ------------------------- */
+  function resetAnimations(){
+    // 砂時計と円について簡易的に初期化
+    // 例: アニメーションを強制再読み込みするならクラスを付け替えなど
+    sandTop.style.animation = 'none';
+    sandBottom.style.animation = 'none';
+  }
+
+  function playAnimations(){
+    if(currentMode === 'sand'){
+      // 例: 総時間 totalTime に応じてkeyframe再生
+      // 今は簡単に top: 100px→0, bottom: 0→100px
+      // 途中停止再開は考慮していない
+      sandTop.style.animation = `sandTopAnim ${totalTime}s linear forwards`;
+      sandBottom.style.animation = `sandBottomAnim ${totalTime}s linear forwards`;
+    }
+    if(currentMode === 'circle'){
+      // 本来はstroke-dashoffset操作などをCSSアニメにしてもOK
+      // デモではJSでパスを描画しているため、ここでは割愛
+      // 例だけ書くと:
+      // circleFillPath.style.animation = `circleAnim ${totalTime}s linear forwards`;
+    }
+  }
+
+  function pauseAnimations(){
+    if(currentMode === 'sand'){
+      sandTop.style.animationPlayState = 'paused';
+      sandBottom.style.animationPlayState = 'paused';
+    }
+    if(currentMode === 'circle'){
+      // circleFillPath.style.animationPlayState = 'paused';
+    }
+  }
+})();
+</script>
 </body>
 </html>
